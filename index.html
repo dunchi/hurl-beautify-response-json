@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>nicemso note</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background-color: #1e1e1e;
+      }
+
+      .toolbar {
+        height: 42px;
+        background-color: transparent;
+        border-bottom: 1px solid #2c2c2c;
+        display: flex;
+        align-items: center;
+        gap: 0;
+      }
+
+      #addressBar {
+        flex: 1;
+        height: 40px;
+        padding: 0 12px;
+        border: 1px solid #343434;
+        border-right: none;
+        border-radius: 0;
+        font-size: 14px;
+        outline: none;
+        background-color: #2c2c2c;
+        color: #ffffff;
+        margin: 0;
+      }
+
+      #addressBar:focus {
+        border-color: #343434;
+        box-shadow: none;
+      }
+
+      #goButton {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        background-color: #2c2c2c;
+        color: #ffffff;
+        border: 1px solid #343434;
+        border-left: none;
+        border-radius: 0;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      #goButton:hover {
+        background-color: #404040;
+      }
+
+      #goButton:active {
+        background-color: #4c4c4c;
+      }
+
+      #webview {
+        flex: 1;
+        border: none;
+        background-color: #1e1e1e;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <input
+        type="text"
+        id="addressBar"
+        placeholder="웹사이트 주소를 입력하세요"
+        value="https://github.com/nicemso/biseo-server-bff/issues/22"
+      />
+      <button id="goButton">UI</button>
+    </div>
+
+    <webview
+      id="webview"
+      src="https://github.com/nicemso/biseo-server-bff/issues/22"
+      nodeintegration
+    ></webview>
+
+    <script>
+      const addressBar = document.getElementById("addressBar");
+      const goButton = document.getElementById("goButton");
+      const webview = document.getElementById("webview");
+
+      function navigateToUrl() {
+        let url = addressBar.value.trim();
+
+        // URL이 비어있으면 리턴
+        if (!url) return;
+
+        // http:// 또는 https://가 없으면 자동으로 https:// 추가
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+          url = "https://" + url;
+        }
+
+        // 주소창 업데이트
+        addressBar.value = url;
+
+        // 웹뷰로 이동
+        webview.src = url;
+      }
+
+      // 버튼 클릭 이벤트 - UI 수정 로직 실행
+      goButton.addEventListener("click", function () {
+        const currentUrl = webview.getURL();
+        executeUIModifications(currentUrl);
+      });
+
+      // 주소창에서 엔터키 이벤트
+      addressBar.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          navigateToUrl();
+        }
+      });
+
+      // 웹뷰에서 URL이 변경될 때 주소창 업데이트만
+      webview.addEventListener("did-navigate", function (e) {
+        addressBar.value = e.url;
+      });
+
+      webview.addEventListener("did-navigate-in-page", function (e) {
+        addressBar.value = e.url;
+      });
+
+      // DOM 로드 완료 시 주소창 업데이트 및 키 이벤트 주입
+      webview.addEventListener("dom-ready", function () {
+        const currentUrl = webview.getURL();
+        addressBar.value = currentUrl;
+
+        // 웹뷰 내부에 키 이벤트 리스너 주입
+        const keyScript = `
+          document.addEventListener("keydown", function(event) {
+            if (event.key === 'e' || event.key === 'E') {
+              // console.log를 통해 메인 페이지에 신호 전송
+              console.log('UI_BUTTON_TRIGGER');
+            }
+            
+            // Command+S 또는 Ctrl+S로 특정 버튼 클릭
+            if ((event.metaKey || event.ctrlKey) && event.key === 's') {
+              event.preventDefault();
+              console.log('SAVE_BUTTON_TRIGGER');
+            }
+            
+            // Command+R 또는 Ctrl+R로 새로고침
+            if ((event.metaKey || event.ctrlKey) && event.key === 'r') {
+              event.preventDefault();
+              console.log('RELOAD_REQUEST');
+            }
+          });
+        `;
+
+        webview.executeJavaScript(keyScript).catch((err) => {
+          console.log("키 이벤트 주입 오류:", err);
+        });
+      });
+
+      // 키보드 이벤트 - 'e' 키를 누르면 UI 버튼 클릭 (메인 페이지에서)
+      document.addEventListener("keydown", function (event) {
+        // Command+N (macOS) 또는 Ctrl+N (Windows/Linux)로 새 윈도우 생성
+        if ((event.metaKey || event.ctrlKey) && event.key === "n") {
+          event.preventDefault(); // 기본 새 탭 동작 방지
+          // 일렉트론의 메인 프로세스에서 처리됨
+          return;
+        }
+
+        // Command+R (macOS) 또는 Ctrl+R (Windows/Linux)로 웹뷰 새로고침
+        if ((event.metaKey || event.ctrlKey) && event.key === "r") {
+          event.preventDefault(); // 기본 새로고침 동작 방지
+          webview.reload();
+          return;
+        }
+
+        // Command+S (macOS) 또는 Ctrl+S (Windows/Linux)로 특정 버튼 클릭
+        if ((event.metaKey || event.ctrlKey) && event.key === "s") {
+          event.preventDefault(); // 기본 저장 동작 방지
+          clickSaveButton();
+          return;
+        }
+
+        // Command+E (macOS) 또는 Ctrl+E (Windows/Linux)로 go 버튼 클릭
+        if ((event.metaKey || event.ctrlKey) && event.key === "e") {
+          event.preventDefault(); // 기본 동작 방지
+          goButton.click();
+          return;
+        }
+      });
+
+      // 웹뷰에서 오는 console 메시지 처리
+      webview.addEventListener("console-message", function (e) {
+        if (e.message === "UI_BUTTON_TRIGGER") {
+          goButton.click();
+        } else if (e.message === "SAVE_BUTTON_TRIGGER") {
+          clickSaveButton();
+        } else if (e.message === "RELOAD_REQUEST") {
+          webview.reload();
+        }
+      });
+
+      // Command+S로 특정 버튼 클릭하는 함수
+      function clickSaveButton() {
+        const script = `
+          (function() {
+            const xpath = '/html/body/div[1]/div[5]/div/main/react-app/div/div[2]/div/div/div[6]/div/div[1]/div[1]/div/div/div/div/div[2]/div/div/slash-command-expander/fieldset/div[2]/footer/div[2]/button[2]';
+            console.log('저장 버튼 XPath:', xpath);
+            const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+            const element = result.singleNodeValue;
+            
+            if (element) {
+              console.log('저장 버튼을 찾았습니다:', element);
+              element.click();
+              console.log('저장 버튼이 클릭되었습니다.');
+            } else {
+              console.log('저장 버튼을 찾을 수 없습니다. DOM 구조를 확인해주세요.');
+            }
+          })();
+        `;
+
+        webview.executeJavaScript(script).catch((err) => {
+          console.log("저장 버튼 클릭 스크립트 실행 오류:", err);
+        });
+      }
+
+      // UI 수정 로직 실행 (UI 버튼 클릭시에만)
+      function executeUIModifications(url) {
+        // GitHub 이슈 페이지 패턴 확인
+        const issuePattern = /github\.com\/[^\/]+\/[^\/]+\/issues\/\d+/;
+
+        if (issuePattern.test(url)) {
+          const scriptOthers = `
+          (function() {
+                console.log('첫 번째 요소를 찾을 수 없습니다. DOM 구조를 확인해주세요.');
+                  
+                // 1. 오른쪽 없애기
+                const xpath1 = '/html/body/div[1]/div[5]/div/main/react-app/div/div[2]/div/div/div[6]/div';
+                const result1 = document.evaluate(xpath1, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                const element1 = result1.singleNodeValue;
+                
+                if (element1 && element1.classList.contains('jonlJW')) {
+                  element1.classList.remove('jonlJW');
+                  console.log('jonlJW 클래스가 제거되었습니다.');
+                }
+
+                // 2. 프로필사진 삭제
+                const xpath2 = '/html/body/div[1]/div[5]/div/main/react-app/div/div[2]/div/div/div[6]/div/div[1]/div[1]/div/a';
+                const result2 = document.evaluate(xpath2, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                const element2 = result2.singleNodeValue;
+                
+                if (element2) {
+                  element2.remove();
+                  console.log('특정 태그가 삭제되었습니다.');
+                }
+
+                // 3. 텍스트 편집기
+                const xpath3 = '/html/body/div[1]/div[5]/div/main/react-app/div/div[2]/div/div/div[6]/div/div[1]/div[1]/div/div/div/div/div[2]/div/div/slash-command-expander/fieldset/div[2]/div/div[1]/span/textarea';
+                const result3 = document.evaluate(xpath3, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                const element3 = result3.singleNodeValue;
+                
+                if (element3) {
+                  element3.style.height = '1500px';
+                  console.log('issue-body-viewer 높이가 1500px로 설정되었습니다.');
+                }
+              })();
+          `;
+          webview.executeJavaScript(scriptOthers).catch((err) => {
+            console.log("스크립트 실행 오류:", err);
+          });
+
+          const scriptEditOutside = `
+          (function() {
+                //수정하기 바깥쪽 버튼
+                const xpath4 = '/html/body/div[1]/div[5]/div/main/react-app/div/div[2]/div/div/div[6]/div/div[1]/div[1]/div/div/div/div/div[1]/div/div[3]/div[2]/div[2]/button';
+                console.log('�� 번째 요소 XPath:', xpath4);
+                const result4 = document.evaluate(xpath4, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                const element4 = result4.singleNodeValue;
+                
+                if (element4) {
+                  console.log('첫 번째 요소를 찾았습니다:', element4);
+                  element4.click();
+                  console.log('첫 번째 요소가 클릭되었습니다.');
+                } else {
+                  console.log('첫 번째 요소를 찾을 수 없습니다. DOM 구조를 확인해주세요.');
+                }
+              })();`;
+          webview.executeJavaScript(scriptEditOutside).catch((err) => {
+            console.log("스크립트 실행 오류:", err);
+          });
+        } else {
+          console.log("GitHub 이슈 페이지가 아닙니다.");
+        }
+      }
+    </script>
+  </body>
+</html>

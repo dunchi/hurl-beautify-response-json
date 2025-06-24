@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nicemso note 실행 가이드</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            background-color: #ecf0f1;
+            padding: 10px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .method {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .command {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 14px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        
+        .step {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        ul {
+            padding-left: 20px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        .file-path {
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        
+        .highlight {
+            background-color: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 nicemso note 실행 가이드 (소스코드 버전)</h1>
+        
+        <div class="info">
+            <strong>📂 프로젝트 폴더:</strong> 소스코드가 들어있는 폴더를 먼저 찾으세요
+        </div>
+
+        <h2>🎯 방법 1: 쉘 스크립트 실행 (가장 간단)</h2>
+        <div class="method">
+            <div class="success">
+                <strong>✨ 추천 방법!</strong> 한 번의 더블클릭으로 실행 가능
+            </div>
+            
+            <div class="step">
+                <strong>1단계:</strong> Finder에서 프로젝트 폴더 열기
+            </div>
+            
+            <div class="step">
+                <strong>2단계:</strong> <span class="file-path">run.sh</span> 파일을 더블클릭
+            </div>
+            
+            <div class="step">
+                <strong>3단계:</strong> "터미널에서 열기" 선택
+            </div>
+            
+            <div class="info">
+                <strong>💡 참고:</strong> 처음 실행 시 보안 경고가 나타날 수 있습니다. "시스템 환경설정 → 보안 및 개인 정보 보호"에서 허용해주세요.
+            </div>
+        </div>
+
+        <h2>🖥️ 방법 2: 터미널 명령어</h2>
+        <div class="method">
+            <div class="step">
+                <strong>1단계:</strong> 터미널(Terminal) 열기
+                <br><span class="highlight">Spotlight(Cmd+Space) → "터미널" 검색</span>
+            </div>
+            
+            <div class="step">
+                <strong>2단계:</strong> 프로젝트 폴더로 이동
+                <div class="command">cd /프로젝트/폴더/경로</div>
+                <div class="info">
+                    <strong>💡 팁:</strong> Finder에서 폴더를 터미널로 드래그하면 경로가 자동 입력됩니다
+                </div>
+            </div>
+            
+            <div class="step">
+                <strong>3단계:</strong> 앱 실행
+                <div class="command">npm start</div>
+            </div>
+        </div>
+
+        <h2>🔧 방법 3: VS Code에서 실행</h2>
+        <div class="method">
+            <div class="step">
+                <strong>1단계:</strong> VS Code로 프로젝트 폴더 열기
+            </div>
+            
+            <div class="step">
+                <strong>2단계:</strong> 터미널 패널 열기 <kbd>Ctrl + `</kbd>
+            </div>
+            
+            <div class="step">
+                <strong>3단계:</strong> 명령어 실행
+                <div class="command">npm start</div>
+            </div>
+        </div>
+
+        <h2>📋 최초 설정 (한 번만 필요)</h2>
+        <div class="method">
+            <div class="warning">
+                <strong>⚠️ 중요:</strong> 다른 사람이 소스코드를 받았을 때 최초 1회 실행 필요
+            </div>
+            
+            <div class="step">
+                <strong>1단계:</strong> Node.js 설치 확인
+                <div class="command">node --version</div>
+                <div class="command">npm --version</div>
+                <div class="info">
+                    버전이 표시되지 않으면 <a href="https://nodejs.org" target="_blank">Node.js 공식 사이트</a>에서 설치
+                </div>
+            </div>
+            
+            <div class="step">
+                <strong>2단계:</strong> 의존성 설치
+                <div class="command">npm install</div>
+                <div class="info">
+                    이 명령어는 프로젝트에 필요한 라이브러리들을 설치합니다 (최초 1회만)
+                </div>
+            </div>
+            
+            <div class="step">
+                <strong>3단계:</strong> 앱 실행
+                <div class="command">npm start</div>
+            </div>
+        </div>
+
+        <h2>🎮 단축키 안내</h2>
+        <div class="method">
+            <p>앱이 실행되면 다음 단축키들을 사용할 수 있습니다:</p>
+            <ul>
+                <li><kbd>Command + E</kbd> (또는 <kbd>E</kbd>): UI 수정 로직 실행</li>
+                <li><kbd>Command + S</kbd>: 저장 버튼 클릭</li>
+                <li><kbd>Command + R</kbd>: 웹뷰 새로고침</li>
+                <li><kbd>Enter</kbd> (주소창에서): 페이지 이동</li>
+            </ul>
+        </div>
+
+        <h2>🔄 소스코드 수정 후</h2>
+        <div class="method">
+            <div class="step">
+                <strong>1단계:</strong> 실행 중인 앱 종료 <kbd>Cmd + Q</kbd>
+            </div>
+            
+            <div class="step">
+                <strong>2단계:</strong> 소스코드 수정 (index.html, main.js 등)
+            </div>
+            
+            <div class="step">
+                <strong>3단계:</strong> 다시 실행
+                <div class="command">npm start</div>
+            </div>
+            
+            <div class="success">
+                <strong>✅ 장점:</strong> 빌드 과정 없이 즉시 변경사항 확인 가능!
+            </div>
+        </div>
+
+        <h2>🚨 문제 해결</h2>
+        <div class="method">
+            <div class="warning">
+                <strong>npm start가 안 될 때:</strong>
+                <div class="command">npm install</div>
+                <div class="command">npm start</div>
+            </div>
+            
+            <div class="warning">
+                <strong>포트 에러가 날 때:</strong>
+                <br>다른 터미널에서 실행 중인 앱이 있는지 확인하고 종료
+            </div>
+            
+            <div class="warning">
+                <strong>일렉트론이 안 열릴 때:</strong>
+                <div class="command">npm install electron --save-dev</div>
+                <div class="command">npm start</div>
+            </div>
+        </div>
+
+        <h2>📤 소스코드 공유 시 포함할 파일들</h2>
+        <div class="method">
+            <div class="step">
+                <strong>필수 파일들:</strong>
+                <ul>
+                    <li><span class="file-path">package.json</span> - 프로젝트 설정</li>
+                    <li><span class="file-path">main.js</span> - 일렉트론 메인 프로세스</li>
+                    <li><span class="file-path">index.html</span> - UI 및 로직</li>
+                    <li><span class="file-path">run.sh</span> - 실행 스크립트</li>
+                    <li><span class="file-path">README.md</span> - 설명서 (선택사항)</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <strong>제외할 폴더들:</strong>
+                <ul>
+                    <li><span class="file-path">node_modules/</span> - 자동 생성됨</li>
+                    <li><span class="file-path">dist/</span> - 빌드 결과물</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="success">
+            <strong>🎉 완료!</strong> 이제 소스코드만 공유해도 누구나 쉽게 실행할 수 있습니다.
+        </div>
+
+        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
+        <p style="text-align: center; color: #7f8c8d; font-size: 14px;">
+            생성일: <script>document.write(new Date().toLocaleString('ko-KR'));</script>
+        </p>
+    </div>
+</body>
+</html>
