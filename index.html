@@ -46,13 +46,13 @@
         box-shadow: none;
       }
 
-      #goButton {
+      #backButton, #forwardButton, #goButton {
         width: 40px;
         height: 40px;
         padding: 0;
         background-color: #2c2c2c;
         color: #ffffff;
-        border: 1px solid #343434;
+        border: 1px solid #2c2c2c;
         border-left: none;
         border-radius: 0;
         cursor: pointer;
@@ -60,12 +60,18 @@
         font-weight: 500;
       }
 
-      #goButton:hover {
+      #backButton:hover, #forwardButton:hover, #goButton:hover {
         background-color: #404040;
       }
 
-      #goButton:active {
+      #backButton:active, #forwardButton:active, #goButton:active {
         background-color: #4c4c4c;
+      }
+
+      #backButton:disabled, #forwardButton:disabled {
+        background-color: #2c2c2c;
+        color: #666666;
+        cursor: not-allowed;
       }
 
       #webview {
@@ -81,21 +87,29 @@
         type="text"
         id="addressBar"
         placeholder="웹사이트 주소를 입력하세요"
-        value="https://github.com/nicemso/biseo-server-bff/issues/22"
+        value="https://github.com/nicemso"
       />
+      <button id="backButton">←</button>
+      <button id="forwardButton">→</button>
       <button id="goButton">UI</button>
     </div>
 
     <webview
       id="webview"
-      src="https://github.com/nicemso/biseo-server-bff/issues/22"
+      src="https://github.com/nicemso"
       nodeintegration
     ></webview>
 
     <script>
       const addressBar = document.getElementById("addressBar");
+      const backButton = document.getElementById("backButton");
+      const forwardButton = document.getElementById("forwardButton");
       const goButton = document.getElementById("goButton");
       const webview = document.getElementById("webview");
+      
+      // URL 히스토리 관리
+      let urlHistory = [];
+      let currentHistoryIndex = -1;
 
       function navigateToUrl() {
         let url = addressBar.value.trim();
@@ -117,8 +131,34 @@
 
       // 버튼 클릭 이벤트 - UI 수정 로직 실행
       goButton.addEventListener("click", function () {
-        const currentUrl = webview.getURL();
-        executeUIModifications(currentUrl);
+        try {
+          const currentUrl = webview.getURL();
+          executeUIModifications(currentUrl);
+        } catch (error) {
+          alert('UI 버튼 클릭 중 오류가 발생했습니다: ' + error.message);
+        }
+      });
+
+      // 뒤로가기 버튼 클릭 이벤트
+      backButton.addEventListener("click", function () {
+        try {
+          if (webview.canGoBack()) {
+            webview.goBack();
+          }
+        } catch (error) {
+          alert('뒤로가기 중 오류가 발생했습니다: ' + error.message);
+        }
+      });
+
+      // 앞으로가기 버튼 클릭 이벤트
+      forwardButton.addEventListener("click", function () {
+        try {
+          if (webview.canGoForward()) {
+            webview.goForward();
+          }
+        } catch (error) {
+          alert('앞으로가기 중 오류가 발생했습니다: ' + error.message);
+        }
       });
 
       // 주소창에서 엔터키 이벤트
@@ -128,21 +168,33 @@
         }
       });
 
-      // 웹뷰에서 URL이 변경될 때 주소창 업데이트만
+      // 웹뷰에서 URL이 변경될 때 주소창 업데이트 및 네비게이션 버튼 상태 업데이트
       webview.addEventListener("did-navigate", function (e) {
-        addressBar.value = e.url;
+        try {
+          addressBar.value = e.url;
+          updateNavigationButtons();
+        } catch (error) {
+          alert('네비게이션 이벤트 처리 중 오류가 발생했습니다: ' + error.message);
+        }
       });
 
       webview.addEventListener("did-navigate-in-page", function (e) {
-        addressBar.value = e.url;
+        try {
+          addressBar.value = e.url;
+          updateNavigationButtons();
+        } catch (error) {
+          alert('페이지 내 네비게이션 이벤트 처리 중 오류가 발생했습니다: ' + error.message);
+        }
       });
 
-      // DOM 로드 완료 시 주소창 업데이트 및 키 이벤트 주입
+      // DOM 로드 완료 시 주소창 업데이트, 키 이벤트 주입 및 네비게이션 버튼 상태 업데이트
       webview.addEventListener("dom-ready", function () {
-        const currentUrl = webview.getURL();
-        addressBar.value = currentUrl;
+        try {
+          const currentUrl = webview.getURL();
+          addressBar.value = currentUrl;
+          updateNavigationButtons();
 
-        // 웹뷰 내부에 키 이벤트 리스너 주입
+          // 웹뷰 내부에 키 이벤트 리스너 주입
         const keyScript = `
           document.addEventListener("keydown", function(event) {
             if (event.key === 'e' || event.key === 'E') {
@@ -165,37 +217,88 @@
         `;
 
         webview.executeJavaScript(keyScript).catch((err) => {
-          console.log("키 이벤트 주입 오류:", err);
+          alert("키 이벤트 주입 오류: " + err.message);
         });
+        } catch (error) {
+          alert('DOM 준비 이벤트 처리 중 오류가 발생했습니다: ' + error.message);
+        }
       });
 
       // 키보드 이벤트 - 'e' 키를 누르면 UI 버튼 클릭 (메인 페이지에서)
       document.addEventListener("keydown", function (event) {
-        // Command+N (macOS) 또는 Ctrl+N (Windows/Linux)로 새 윈도우 생성
-        if ((event.metaKey || event.ctrlKey) && event.key === "n") {
-          event.preventDefault(); // 기본 새 탭 동작 방지
-          // 일렉트론의 메인 프로세스에서 처리됨
+        // 화살표 위 키 - 최신 URL부터 표시
+        if (event.key === "ArrowUp" && document.activeElement === addressBar) {
+          event.preventDefault();
+          try {
+            if (urlHistory.length > 0) {
+              if (currentHistoryIndex === -1) {
+                currentHistoryIndex = urlHistory.length - 1;
+              } else if (currentHistoryIndex > 0) {
+                currentHistoryIndex--;
+              }
+              addressBar.value = urlHistory[currentHistoryIndex];
+            }
+          } catch (error) {
+            alert('URL 히스토리 탐색 중 오류가 발생했습니다: ' + error.message);
+          }
+          return;
+        }
+        
+        // 화살표 아래 키 - 오래된 URL 순서로 표시
+        if (event.key === "ArrowDown" && document.activeElement === addressBar) {
+          event.preventDefault();
+          try {
+            if (urlHistory.length > 0 && currentHistoryIndex !== -1) {
+              if (currentHistoryIndex < urlHistory.length - 1) {
+                currentHistoryIndex++;
+                addressBar.value = urlHistory[currentHistoryIndex];
+              } else {
+                currentHistoryIndex = -1;
+                addressBar.value = "";
+              }
+            }
+          } catch (error) {
+            alert('URL 히스토리 탐색 중 오류가 발생했습니다: ' + error.message);
+          }
           return;
         }
 
-        // Command+R (macOS) 또는 Ctrl+R (Windows/Linux)로 웹뷰 새로고침
-        if ((event.metaKey || event.ctrlKey) && event.key === "r") {
-          event.preventDefault(); // 기본 새로고침 동작 방지
-          webview.reload();
+        // N키로 새 윈도우 생성 (modifier 키 필요)
+        if ((event.metaKey || event.ctrlKey || event.altKey) && event.key === "n") {
+          event.preventDefault();
           return;
         }
 
-        // Command+S (macOS) 또는 Ctrl+S (Windows/Linux)로 특정 버튼 클릭
-        if ((event.metaKey || event.ctrlKey) && event.key === "s") {
-          event.preventDefault(); // 기본 저장 동작 방지
-          clickSaveButton();
+        // R키로 웹뷰 새로고침 (modifier 키 필요)
+        if ((event.metaKey || event.ctrlKey || event.altKey) && event.key === "r") {
+          event.preventDefault();
+          try {
+            webview.reload();
+          } catch (error) {
+            alert('웹뷰 새로고침 중 오류가 발생했습니다: ' + error.message);
+          }
           return;
         }
 
-        // Command+E (macOS) 또는 Ctrl+E (Windows/Linux)로 go 버튼 클릭
-        if ((event.metaKey || event.ctrlKey) && event.key === "e") {
-          event.preventDefault(); // 기본 동작 방지
-          goButton.click();
+        // S키로 특정 버튼 클릭 (modifier 키 필요)
+        if ((event.metaKey || event.ctrlKey || event.altKey) && event.key === "s") {
+          event.preventDefault();
+          try {
+            clickSaveButton();
+          } catch (error) {
+            alert('저장 버튼 클릭 중 오류가 발생했습니다: ' + error.message);
+          }
+          return;
+        }
+
+        // E키로 go 버튼 클릭 (modifier 키 필요)
+        if ((event.metaKey || event.ctrlKey || event.altKey) && event.key === "e") {
+          event.preventDefault();
+          try {
+            goButton.click();
+          } catch (error) {
+            alert('UI 버튼 클릭 중 오류가 발생했습니다: ' + error.message);
+          }
           return;
         }
       });
@@ -215,33 +318,41 @@
       function clickSaveButton() {
         const script = `
           (function() {
-            const xpath = '/html/body/div[1]/div[5]/div/main/react-app/div/div[2]/div/div/div[6]/div/div[1]/div[1]/div/div/div/div/div[2]/div/div/slash-command-expander/fieldset/div[2]/footer/div[2]/button[2]';
-            console.log('저장 버튼 XPath:', xpath);
-            const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-            const element = result.singleNodeValue;
-            
-            if (element) {
-              console.log('저장 버튼을 찾았습니다:', element);
-              element.click();
-              console.log('저장 버튼이 클릭되었습니다.');
-            } else {
-              console.log('저장 버튼을 찾을 수 없습니다. DOM 구조를 확인해주세요.');
+            try {
+              const xpath = '/html/body/div[1]/div[5]/div/main/react-app/div/div[2]/div/div/div[6]/div/div[1]/div[1]/div/div/div/div/div[2]/div/div/slash-command-expander/fieldset/div[2]/footer/div[2]/button[2]';
+              console.log('저장 버튼 XPath:', xpath);
+              const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+              const element = result.singleNodeValue;
+              
+              if (element) {
+                console.log('저장 버튼을 찾았습니다:', element);
+                element.click();
+                console.log('저장 버튼이 클릭되었습니다.');
+              } else {
+                console.log('저장 버튼을 찾을 수 없습니다. DOM 구조를 확인해주세요.');
+              }
+            } catch (error) {
+              console.error('저장 버튼 스크립트 실행 중 오류:', error);
             }
           })();
         `;
 
         webview.executeJavaScript(script).catch((err) => {
-          console.log("저장 버튼 클릭 스크립트 실행 오류:", err);
+          alert('저장 버튼 클릭 스크립트 실행 오류: ' + err.message);
         });
       }
 
       // UI 수정 로직 실행 (UI 버튼 클릭시에만)
       function executeUIModifications(url) {
-        // GitHub 이슈 페이지 패턴 확인
-        const issuePattern = /github\.com\/[^\/]+\/[^\/]+\/issues\/\d+/;
+        try {
+          // GitHub 이슈 페이지 패턴 확인
+          const issuePattern = /github\.com\/[^\/]+\/[^\/]+\/issues\/\d+/;
 
-        if (issuePattern.test(url)) {
-          const scriptOthers = `
+          if (issuePattern.test(url)) {
+            // URL을 히스토리에 저장
+            saveUrlToHistory(url);
+            
+            const scriptOthers = `
           (function() {
                 console.log('첫 번째 요소를 찾을 수 없습니다. DOM 구조를 확인해주세요.');
                   
@@ -277,30 +388,93 @@
               })();
           `;
           webview.executeJavaScript(scriptOthers).catch((err) => {
-            console.log("스크립트 실행 오류:", err);
+            alert("UI 수정 스크립트 실행 오류: " + err.message);
           });
 
           const scriptEditOutside = `
           (function() {
-                //수정하기 바깥쪽 버튼
-                const xpath4 = '/html/body/div[1]/div[5]/div/main/react-app/div/div[2]/div/div/div[6]/div/div[1]/div[1]/div/div/div/div/div[1]/div/div[3]/div[2]/div[2]/button';
-                console.log('�� 번째 요소 XPath:', xpath4);
-                const result4 = document.evaluate(xpath4, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-                const element4 = result4.singleNodeValue;
-                
-                if (element4) {
-                  console.log('첫 번째 요소를 찾았습니다:', element4);
-                  element4.click();
-                  console.log('첫 번째 요소가 클릭되었습니다.');
-                } else {
-                  console.log('첫 번째 요소를 찾을 수 없습니다. DOM 구조를 확인해주세요.');
+                try {
+                  //수정하기 바깥쪽 버튼
+                  const xpath4 = '/html/body/div[1]/div[5]/div/main/react-app/div/div[2]/div/div/div[6]/div/div[1]/div[1]/div/div/div/div/div[1]/div/div[3]/div[2]/div[2]/button';
+                  console.log('수정 버튼 XPath:', xpath4);
+                  const result4 = document.evaluate(xpath4, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                  const element4 = result4.singleNodeValue;
+                  
+                  if (element4) {
+                    console.log('수정 버튼을 찾았습니다:', element4);
+                    element4.click();
+                    console.log('수정 버튼이 클릭되었습니다.');
+                  } else {
+                    console.log('수정 버튼을 찾을 수 없습니다. DOM 구조를 확인해주세요.');
+                  }
+                } catch (error) {
+                  console.error('수정 버튼 스크립트 실행 중 오류:', error);
                 }
               })();`;
           webview.executeJavaScript(scriptEditOutside).catch((err) => {
-            console.log("스크립트 실행 오류:", err);
+            alert("수정 버튼 스크립트 실행 오류: " + err.message);
           });
         } else {
           console.log("GitHub 이슈 페이지가 아닙니다.");
+        }
+        } catch (error) {
+          alert('UI 수정 함수 실행 중 오류가 발생했습니다: ' + error.message);
+        }
+      }
+      
+      // URL 히스토리 저장 함수
+      function saveUrlToHistory(url) {
+        try {
+          // 중복 URL 제거 (이미 있다면 제거 후 최신으로 추가)
+          const existingIndex = urlHistory.indexOf(url);
+          if (existingIndex !== -1) {
+            urlHistory.splice(existingIndex, 1);
+          }
+          
+          // 새 URL을 배열 끝에 추가 (최신이 마지막)
+          urlHistory.push(url);
+          
+          // 로컬 스토리지에 저장
+          localStorage.setItem('urlHistory', JSON.stringify(urlHistory));
+          
+          console.log('URL이 히스토리에 저장되었습니다:', url);
+          console.log('현재 히스토리:', urlHistory);
+        } catch (error) {
+          alert('URL 히스토리 저장 중 오류가 발생했습니다: ' + error.message);
+        }
+      }
+      
+      // URL 히스토리 로드 함수
+      function loadUrlHistory() {
+        try {
+          const savedHistory = localStorage.getItem('urlHistory');
+          if (savedHistory) {
+            urlHistory = JSON.parse(savedHistory);
+            console.log('히스토리가 로드되었습니다:', urlHistory);
+          }
+        } catch (error) {
+          alert('히스토리 로드 중 오류가 발생했습니다: ' + error.message);
+          urlHistory = [];
+        }
+      }
+      
+      // 페이지 로드 시 히스토리 로드
+      window.addEventListener('DOMContentLoaded', function() {
+        try {
+          loadUrlHistory();
+          updateNavigationButtons();
+        } catch (error) {
+          alert('페이지 로드 중 오류가 발생했습니다: ' + error.message);
+        }
+      });
+
+      // 네비게이션 버튼 상태 업데이트 함수
+      function updateNavigationButtons() {
+        try {
+          backButton.disabled = !webview.canGoBack();
+          forwardButton.disabled = !webview.canGoForward();
+        } catch (error) {
+          console.log('네비게이션 버튼 상태 업데이트 중 오류:', error);
         }
       }
     </script>
