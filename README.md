@@ -1,78 +1,50 @@
-# nicemso note
+# Hurl - Command Line Terminal
 
-GitHub 이슈 페이지를 위한 맞춤형 브라우저
+Electron 기반의 간단한 커맨드라인 터미널 애플리케이션
 
 ## 🚀 실행 방법
 
-### 방법 1: Spotlight 실행 (Automator 사용) ⭐️ 추천
-1. **Automator 앱 생성** (최초 1회만)
-   - Spotlight (`Cmd + Space`) → "Automator" 검색 → 실행
-   - "Application" 선택
-   - 왼쪽에서 "Utilities" → "Run Shell Script" 더블클릭
-   - Shell 스크립트 내용:
-     ```
-     export PATH="/opt/homebrew/bin:$PATH"
-      cd ~/electron-app
-      npm start
-     ```
-   - `Cmd + S` → 이름: "note" → Applications 폴더에 저장
+### 방법 1: macOS 앱으로 실행 (추천)
 
-2. **Spotlight로 실행**
-   - `Cmd + Space` → "note" 입력 → Enter
+1. **Hurl.app 생성** (최초 1회만)
+   ```bash
+   cd 프로젝트폴더
+   ./create-app.sh
+   ```
 
-### 방법 2: 스크립트 실행
-- 프로젝트 폴더에서 `run.sh` 더블클릭
-- "터미널에서 열기" 선택
+2. **앱 실행**
+   - 홈 디렉토리(`~`)에 생성된 `Hurl.app`을 더블클릭
+
+### 방법 2: 터미널에서 직접 실행
+```bash
+npm start
+```
 
 ## 📋 최초 설정
 
 ### 1. 의존성 설치 (최초 1회만)
 ```bash
-cd /프로젝트/폴더/경로
 npm install
 ```
 
-### 2. 앱 실행
+### 2. macOS 앱 생성
 ```bash
-npm start
+./create-app.sh
 ```
 
-## 🎮 단축키
+## 🎮 사용법
 
-앱이 실행되면 다음 단축키들을 사용할 수 있습니다:
+- 상단 입력창에 커맨드를 입력하고 Enter
+- 하단 영역에 실행 결과가 최신순으로 표시됩니다
+- JSON 응답은 자동으로 예쁘게 포맷팅됩니다
 
-- **`Command + N`**: 새 윈도우 생성 (새로운 웹뷰)
-- **`Command + E`** (또는 `E`): UI 수정 로직 실행
-- **`Command + S`**: 저장 버튼 클릭  
-- **`Command + R`**: 웹뷰 새로고침
-- **`Enter`** (주소창에서): 페이지 이동
+## 🔧 기능
 
-
-
-## 🚨 문제 해결
-
-### 일렉트론이 열리지 않을 때
-```bash
-npm install electron --save-dev
-npm start
-```
-
-### 보안 경고 (macOS)
-- "시스템 환경설정 → 보안 및 개인 정보 보호"에서 앱 실행 허용
-
-
-### GitHub 이슈 페이지 최적화
-- 특정 요소 자동 클릭
-- UI 요소 제거 및 수정
-- 커스텀 스타일 적용
-
-### 브라우저 기능
-- 주소창을 통한 페이지 이동
-- 웹뷰 새로고침
-- 키보드 단축키 지원
+- 실제 시스템 커맨드 실행
+- JSON 응답 자동 beautify
+- 실행 결과 타임스탬프 표시
+- 최신 결과가 위로 오는 정렬
 
 ---
 
-**상세한 실행 방법은 `HOW_TO_RUN.html` 파일을 브라우저에서 열어보세요.**
-
-*최종 업데이트: 2025년 6월 24일*
+*Command Line Terminal for Electron*

@@ -1,17 +1,23 @@
-const { app, BrowserWindow, Menu } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain } = require("electron");
+const { exec } = require("child_process");
 const path = require("path");
 
 let windows = [];
 
 function createWindow() {
+  // 아이콘 파일 경로 확인
+  const iconPath = path.join(__dirname, 'assets/icon.icns');
+  console.log('Icon path:', iconPath);
+  
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    icon: iconPath, // 아이콘 설정
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false,
+      contextIsolation: true,
       webSecurity: false, // 외부 사이트 로드를 위해 필요
-      webviewTag: true, // webview 태그 활성화
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
@@ -40,6 +46,21 @@ function createWindow() {
 
   return mainWindow;
 }
+
+// IPC 핸들러 - 커맨드 실행
+ipcMain.handle('execute-command', (event, command) => {
+  return new Promise((resolve, reject) => {
+    exec(command, { timeout: 30000 }, (error, stdout, stderr) => {
+      if (error) {
+        resolve(`Error: ${error.message}`);
+      } else if (stderr) {
+        resolve(`${stdout}${stderr}`);
+      } else {
+        resolve(stdout || '(no output)');
+      }
+    });
+  });
+});
 
 // 메뉴 생성 (Command+N 단축키 포함)
 function createMenu() {
