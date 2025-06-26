@@ -81,6 +81,10 @@
       const commandLine = document.getElementById("commandLine");
       const textArea = document.getElementById("textArea");
       
+      // 커맨드 히스토리 관리
+      let commandHistory = [];
+      let historyIndex = -1;
+      
 
 
       // JSON인지 확인하고 beautify하는 함수
@@ -104,11 +108,29 @@
         return output;
       }
 
+      // 히스토리에 커맨드 추가 (중복 방지)
+      function addToHistory(command) {
+        // 기존에 같은 커맨드가 있다면 제거
+        const existingIndex = commandHistory.indexOf(command);
+        if (existingIndex !== -1) {
+          commandHistory.splice(existingIndex, 1);
+        }
+        
+        // 새로운 커맨드를 배열 끝에 추가 (최신이 마지막)
+        commandHistory.push(command);
+        
+        // 히스토리 인덱스 초기화
+        historyIndex = -1;
+      }
+
       async function executeCommand() {
         let command = commandLine.value.trim();
 
         // 커맨드가 비어있으면 리턴
         if (!command) return;
+
+        // 히스토리에 추가
+        addToHistory(command);
 
         try {
           // Desktop Commander를 통해 커맨드 실행
@@ -134,10 +156,33 @@
 
 
 
-      // 커맨드라인에서 엔터키 이벤트
-      commandLine.addEventListener("keypress", function (e) {
+      // 커맨드라인에서 키 이벤트 (엔터키, 화살표키)
+      commandLine.addEventListener("keydown", function (e) {
         if (e.key === "Enter") {
           executeCommand();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          // 히스토리에서 이전 커맨드 가져오기 (최신부터)
+          if (commandHistory.length > 0) {
+            if (historyIndex === -1) {
+              historyIndex = commandHistory.length - 1;
+            } else if (historyIndex > 0) {
+              historyIndex--;
+            }
+            commandLine.value = commandHistory[historyIndex];
+          }
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          // 히스토리에서 다음 커맨드 가져오기
+          if (commandHistory.length > 0 && historyIndex !== -1) {
+            if (historyIndex < commandHistory.length - 1) {
+              historyIndex++;
+              commandLine.value = commandHistory[historyIndex];
+            } else {
+              historyIndex = -1;
+              commandLine.value = "";
+            }
+          }
         }
       });
 
