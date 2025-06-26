@@ -75,7 +75,6 @@
     <textarea
       id="textArea"
       placeholder="커맨드 실행 결과가 여기에 표시됩니다"
-      readonly
     ></textarea>
 
     <script>
@@ -140,6 +139,29 @@
         if (e.key === "Enter") {
           executeCommand();
         }
+      });
+
+      // 텍스트 영역에 붙여넣기 이벤트 (JSON 자동 beautify)
+      textArea.addEventListener("paste", function (e) {
+        e.preventDefault(); // 기본 붙여넣기 동작 방지
+        
+        // 클립보드에서 텍스트 가져오기
+        const clipboardData = e.clipboardData || window.clipboardData;
+        const pastedText = clipboardData.getData('text');
+        
+        // JSON 형식인지 확인하고 beautify
+        const formattedText = formatOutput(pastedText);
+        
+        // 현재 커서 위치에 삽입
+        const startPos = textArea.selectionStart;
+        const endPos = textArea.selectionEnd;
+        const currentText = textArea.value;
+        
+        textArea.value = currentText.substring(0, startPos) + formattedText + currentText.substring(endPos);
+        
+        // 커서 위치 조정
+        const newCursorPos = startPos + formattedText.length;
+        textArea.setSelectionRange(newCursorPos, newCursorPos);
       });
 
 
