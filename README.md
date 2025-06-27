@@ -9,7 +9,7 @@ Electron 기반의 간단한 커맨드라인 터미널 애플리케이션
 1. **Hurl.app 생성** (최초 1회만)
    ```bash
    cd 프로젝트폴더
-   ./create-app.sh
+   ./create-app.command
    ```
 
 2. **앱 실행**
