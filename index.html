@@ -196,6 +196,15 @@
         border-left-color: #ff9800;
       }
 
+      .toast.info {
+        border-left-color: #2196f3;
+      }
+
+      .toast .toast-content {
+        white-space: pre-line;
+        line-height: 1.4;
+      }
+
       .toolbar {
         height: 42px;
         background-color: transparent;
@@ -367,8 +376,12 @@
       function showToast(message, type = 'info', duration = 3000) {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        toast.textContent = message;
         
+        const content = document.createElement('div');
+        content.className = 'toast-content';
+        content.textContent = message;
+        
+        toast.appendChild(content);
         document.body.appendChild(toast);
         
         // 애니메이션을 위해 약간의 지연
@@ -616,20 +629,34 @@ Content-Type: application/json
         // 커맨드가 비어있으면 리턴
         if (!command) return;
 
-        // "clear" 커맨드인지 확인
-        if (command.toLowerCase() === "clear") {
+        // "?" 커맨드인지 확인 (도움말)
+        if (command === "?") {
+          showToast('사용 가능한 커맨드:\n\nclear-history: 히스토리 초기화\nclear: 결과창 클리어\n?: 도움말 표시', 'info', 8000);
+          commandLine.value = "";
+          return;
+        }
+
+        // "clear-history" 커맨드인지 확인
+        if (command.toLowerCase() === "clear-history") {
           const cleared = await clearHistory();
           if (cleared) {
-            // 텍스트 영역도 클리어
-            textArea.value = "";
-            // 토스트 메시지로 성공 알림
             showToast('히스토리가 모두 초기화되었습니다.', 'success');
           } else {
-            // 토스트 메시지로 오류 알림
             showToast('히스토리 초기화 중 오류가 발생했습니다.', 'error');
           }
           
-          // 커맨드 라인 초기화
+          commandLine.value = "";
+          return;
+        }
+
+        // "clear" 커맨드인지 확인 (결과창 클리어)
+        if (command.toLowerCase() === "clear") {
+          textArea.value = "";
+          showToast('결과창이 클리어되었습니다.', 'success');
+          
+          // 히스토리에 추가
+          addToHistory(command);
+          
           commandLine.value = "";
           return;
         }
