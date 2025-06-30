@@ -157,6 +157,79 @@ ipcMain.handle('write-file', (event, filePath, content) => {
   });
 });
 
+// IPC 핸들러 - 파일 생성
+ipcMain.handle('create-file', (event, filePath) => {
+  return new Promise((resolve) => {
+    try {
+      // 파일이 이미 존재하는지 확인
+      if (fs.existsSync(filePath)) {
+        resolve({ success: false, error: '파일이 이미 존재합니다.' });
+        return;
+      }
+      
+      // 디렉토리 경로 확인 및 생성
+      const dir = path.dirname(filePath);
+      
+      // 먼저 일반적인 방법으로 시도
+      try {
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true, mode: 0o755 });
+        }
+        // 빈 파일 생성
+        fs.writeFileSync(filePath, '', 'utf8');
+        resolve({ success: true });
+        return;
+      } catch (error) {
+        // 권한 오류가 발생한 경우 비밀번호가 필요함을 알림
+        if (error.code === 'EACCES') {
+          resolve({ success: false, needsPassword: true, error: '관리자 권한이 필요합니다.' });
+        } else {
+          resolve({ success: false, error: error.message });
+        }
+      }
+    } catch (error) {
+      console.error('파일 생성 오류:', error);
+      resolve({ success: false, error: error.message });
+    }
+  });
+});
+
+// IPC 핸들러 - 비밀번호와 함께 파일 생성
+ipcMain.handle('create-file-with-password', (event, filePath, password) => {
+  return new Promise((resolve) => {
+    try {
+      // 파일이 이미 존재하는지 확인
+      if (fs.existsSync(filePath)) {
+        resolve({ success: false, error: '파일이 이미 존재합니다.' });
+        return;
+      }
+      
+      const dir = path.dirname(filePath);
+      
+      // 비밀번호와 함께 sudo 명령 실행
+      const sudoCommand = `echo '${password}' | sudo -S mkdir -p "${dir}" && echo '${password}' | sudo -S chmod 755 "${dir}" && echo '${password}' | sudo -S touch "${filePath}" && echo '${password}' | sudo -S chmod 644 "${filePath}" && echo '${password}' | sudo -S chown $USER "${filePath}"`;
+      
+      exec(sudoCommand, (error, stdout, stderr) => {
+        if (error) {
+          console.error('sudo 명령 실패:', error);
+          if (stderr.includes('Sorry, try again') || stderr.includes('incorrect password')) {
+            resolve({ success: false, error: '비밀번호가 올바르지 않습니다.' });
+          } else {
+            resolve({ success: false, error: `파일 생성 실패: ${error.message}` });
+          }
+          return;
+        }
+        
+        resolve({ success: true });
+      });
+      
+    } catch (error) {
+      console.error('파일 생성 오류:', error);
+      resolve({ success: false, error: error.message });
+    }
+  });
+});
+
 // 메뉴 생성 (Command+N 단축키 포함)
 function createMenu() {
   const template = [
