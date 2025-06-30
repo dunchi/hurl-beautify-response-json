@@ -127,6 +127,36 @@ ipcMain.handle('clear-history', () => {
   });
 });
 
+// IPC 핸들러 - 파일 읽기
+ipcMain.handle('read-file', (event, filePath) => {
+  return new Promise((resolve) => {
+    try {
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8');
+        resolve({ success: true, content });
+      } else {
+        resolve({ success: false, error: '파일을 찾을 수 없습니다.' });
+      }
+    } catch (error) {
+      console.error('파일 읽기 오류:', error);
+      resolve({ success: false, error: error.message });
+    }
+  });
+});
+
+// IPC 핸들러 - 파일 쓰기
+ipcMain.handle('write-file', (event, filePath, content) => {
+  return new Promise((resolve) => {
+    try {
+      fs.writeFileSync(filePath, content, 'utf8');
+      resolve({ success: true });
+    } catch (error) {
+      console.error('파일 쓰기 오류:', error);
+      resolve({ success: false, error: error.message });
+    }
+  });
+});
+
 // 메뉴 생성 (Command+N 단축키 포함)
 function createMenu() {
   const template = [
