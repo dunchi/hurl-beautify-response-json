@@ -160,6 +160,42 @@
         background-color: #4d4d4d;
       }
 
+      /* 토스트 메시지 스타일 */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #2d2d30;
+        color: #ffffff;
+        padding: 12px 20px;
+        border-radius: 6px;
+        border-left: 4px solid #007acc;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 1001;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        max-width: 400px;
+        word-wrap: break-word;
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      .toast.success {
+        border-left-color: #4caf50;
+      }
+
+      .toast.error {
+        border-left-color: #f44336;
+      }
+
+      .toast.warning {
+        border-left-color: #ff9800;
+      }
+
       .toolbar {
         height: 42px;
         background-color: transparent;
@@ -327,6 +363,30 @@
         }
       }
 
+      // 토스트 메시지 함수
+      function showToast(message, type = 'info', duration = 3000) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        // 애니메이션을 위해 약간의 지연
+        setTimeout(() => {
+          toast.classList.add('show');
+        }, 10);
+        
+        // 지정된 시간 후 토스트 제거
+        setTimeout(() => {
+          toast.classList.remove('show');
+          setTimeout(() => {
+            if (toast.parentNode) {
+              document.body.removeChild(toast);
+            }
+          }, 300);
+        }, duration);
+      }
+
       // 비밀번호 모달 관련 함수
       function showPasswordModal() {
         return new Promise((resolve) => {
@@ -414,6 +474,9 @@ Content-Type: application/json
       "totalAmount": 100.0
     }
 }`;
+
+            // 토스트 메시지로 성공 알림
+            showToast(`파일 로드됨: ${filePath.split('/').pop()}`, 'success');
           } else {
             // 파일이 존재하지 않는 경우
             const shouldCreate = confirm(`${filePath}\n\n존재하지 않습니다.\n새 파일을 생성하시겠습니까?`);
@@ -439,10 +502,8 @@ Content-Type: application/json
     }
 }`;
                   
-                  // 성공 메시지를 결과창에 표시
-                  const timestamp = new Date().toLocaleTimeString();
-                  const newContent = `[${timestamp}] 새 파일 생성됨: ${filePath}\n\n`;
-                  textArea.value = newContent + textArea.value;
+                  // 토스트 메시지로 성공 알림
+                  showToast(`새 파일 생성됨: ${filePath.split('/').pop()}`, 'success');
                 } else if (createResult.needsPassword) {
                   // 비밀번호가 필요한 경우
                   const passwordResult = await showPasswordModal();
@@ -467,18 +528,18 @@ Content-Type: application/json
     }
 }`;
                         
-                        // 성공 메시지를 결과창에 표시
-                        const timestamp = new Date().toLocaleTimeString();
-                        const newContent = `[${timestamp}] 새 파일 생성됨 (관리자 권한): ${filePath}\n\n`;
-                        textArea.value = newContent + textArea.value;
+                        // 토스트 메시지로 성공 알림
+                        showToast(`새 파일 생성됨: ${filePath.split('/').pop()}`, 'success');
                       } else {
+                        showToast(`파일 생성 실패: ${sudoResult.error}`, 'error');
                         sidebarTitle.textContent = "파일 생성 실패";
-                        sidebarEditor.value = `파일 생성 오류: ${sudoResult.error}`;
+                        sidebarEditor.value = "";
                         currentFilePath = null;
                       }
                     } catch (error) {
+                      showToast(`파일 생성 오류: ${error.message}`, 'error');
                       sidebarTitle.textContent = "파일 생성 오류";
-                      sidebarEditor.value = `파일 생성 오류: ${error.message}`;
+                      sidebarEditor.value = "";
                       currentFilePath = null;
                     }
                   } else {
@@ -487,13 +548,15 @@ Content-Type: application/json
                     currentFilePath = null;
                   }
                 } else {
+                  showToast(`파일 생성 실패: ${createResult.error}`, 'error');
                   sidebarTitle.textContent = "파일 생성 실패";
-                  sidebarEditor.value = `파일 생성 오류: ${createResult.error}`;
+                  sidebarEditor.value = "";
                   currentFilePath = null;
                 }
               } catch (error) {
+                showToast(`파일 생성 오류: ${error.message}`, 'error');
                 sidebarTitle.textContent = "파일 생성 오류";
-                sidebarEditor.value = `파일 생성 오류: ${error.message}`;
+                sidebarEditor.value = "";
                 currentFilePath = null;
               }
             } else {
@@ -512,31 +575,19 @@ Content-Type: application/json
       // 파일 저장 함수
       async function saveHurlFile() {
         if (!currentFilePath) {
-          // 텍스트 영역에 메시지 표시
-          const timestamp = new Date().toLocaleTimeString();
-          const newContent = `[${timestamp}] 저장할 파일이 선택되지 않았습니다.\n\n`;
-          textArea.value = newContent + textArea.value;
+          showToast('저장할 파일이 선택되지 않았습니다.', 'warning');
           return;
         }
 
         try {
           const result = await window.electronAPI.writeFile(currentFilePath, sidebarEditor.value);
           if (result.success) {
-            // 텍스트 영역에 성공 메시지 표시
-            const timestamp = new Date().toLocaleTimeString();
-            const newContent = `[${timestamp}] 파일 저장됨: ${currentFilePath}\n\n`;
-            textArea.value = newContent + textArea.value;
+            showToast(`파일 저장됨: ${currentFilePath.split('/').pop()}`, 'success');
           } else {
-            // 텍스트 영역에 오류 메시지 표시
-            const timestamp = new Date().toLocaleTimeString();
-            const newContent = `[${timestamp}] 파일 저장 실패: ${result.error}\n\n`;
-            textArea.value = newContent + textArea.value;
+            showToast(`파일 저장 실패: ${result.error}`, 'error');
           }
         } catch (error) {
-          // 텍스트 영역에 오류 메시지 표시
-          const timestamp = new Date().toLocaleTimeString();
-          const newContent = `[${timestamp}] 파일 저장 오류: ${error.message}\n\n`;
-          textArea.value = newContent + textArea.value;
+          showToast(`파일 저장 오류: ${error.message}`, 'error');
         }
       }
 
@@ -571,15 +622,11 @@ Content-Type: application/json
           if (cleared) {
             // 텍스트 영역도 클리어
             textArea.value = "";
-            // 성공 메시지 표시
-            const timestamp = new Date().toLocaleTimeString();
-            const newContent = `[${timestamp}] $ ${command}\n히스토리가 모두 초기화되었습니다.\n\n`;
-            textArea.value = newContent + textArea.value;
+            // 토스트 메시지로 성공 알림
+            showToast('히스토리가 모두 초기화되었습니다.', 'success');
           } else {
-            // 에러 메시지 표시
-            const timestamp = new Date().toLocaleTimeString();
-            const newContent = `[${timestamp}] $ ${command}\n히스토리 초기화 중 오류가 발생했습니다.\n\n`;
-            textArea.value = newContent + textArea.value;
+            // 토스트 메시지로 오류 알림
+            showToast('히스토리 초기화 중 오류가 발생했습니다.', 'error');
           }
           
           // 커맨드 라인 초기화
