@@ -177,8 +177,11 @@ ipcMain.handle('clear-history', () => {
 ipcMain.handle('read-file', (event, filePath) => {
   return new Promise((resolve) => {
     try {
-      if (fs.existsSync(filePath)) {
-        const content = fs.readFileSync(filePath, 'utf8');
+      // 상대 경로인 경우 현재 작업 디렉토리 기준으로 절대 경로 변환
+      const absoluteFilePath = path.isAbsolute(filePath) ? filePath : path.resolve(currentWorkingDirectory, filePath);
+      
+      if (fs.existsSync(absoluteFilePath)) {
+        const content = fs.readFileSync(absoluteFilePath, 'utf8');
         resolve({ success: true, content });
       } else {
         resolve({ success: false, error: '파일을 찾을 수 없습니다.' });
@@ -194,7 +197,10 @@ ipcMain.handle('read-file', (event, filePath) => {
 ipcMain.handle('write-file', (event, filePath, content) => {
   return new Promise((resolve) => {
     try {
-      fs.writeFileSync(filePath, content, 'utf8');
+      // 상대 경로인 경우 현재 작업 디렉토리 기준으로 절대 경로 변환
+      const absoluteFilePath = path.isAbsolute(filePath) ? filePath : path.resolve(currentWorkingDirectory, filePath);
+      
+      fs.writeFileSync(absoluteFilePath, content, 'utf8');
       resolve({ success: true });
     } catch (error) {
       console.error('파일 쓰기 오류:', error);
@@ -207,14 +213,17 @@ ipcMain.handle('write-file', (event, filePath, content) => {
 ipcMain.handle('create-file', (event, filePath) => {
   return new Promise((resolve) => {
     try {
+      // 상대 경로인 경우 현재 작업 디렉토리 기준으로 절대 경로 변환
+      const absoluteFilePath = path.isAbsolute(filePath) ? filePath : path.resolve(currentWorkingDirectory, filePath);
+      
       // 파일이 이미 존재하는지 확인
-      if (fs.existsSync(filePath)) {
+      if (fs.existsSync(absoluteFilePath)) {
         resolve({ success: false, error: '파일이 이미 존재합니다.' });
         return;
       }
       
       // 디렉토리 경로 확인 및 생성
-      const dir = path.dirname(filePath);
+      const dir = path.dirname(absoluteFilePath);
       
       // 먼저 일반적인 방법으로 시도
       try {
@@ -222,13 +231,13 @@ ipcMain.handle('create-file', (event, filePath) => {
           fs.mkdirSync(dir, { recursive: true, mode: 0o755 });
         }
         // 빈 파일 생성
-        fs.writeFileSync(filePath, '', 'utf8');
+        fs.writeFileSync(absoluteFilePath, '', 'utf8');
         resolve({ success: true });
         return;
       } catch (error) {
         // 권한 오류가 발생한 경우 비밀번호가 필요함을 알림
         if (error.code === 'EACCES') {
-          resolve({ success: false, needsPassword: true, error: '관리자 권한이 필요합니다.' });
+          resolve({ success: false, needsPassword: true, error: '관리자 권한이 필요합니다.', absolutePath: absoluteFilePath });
         } else {
           resolve({ success: false, error: error.message });
         }
@@ -244,16 +253,19 @@ ipcMain.handle('create-file', (event, filePath) => {
 ipcMain.handle('create-file-with-password', (event, filePath, password) => {
   return new Promise((resolve) => {
     try {
+      // 상대 경로인 경우 현재 작업 디렉토리 기준으로 절대 경로 변환
+      const absoluteFilePath = path.isAbsolute(filePath) ? filePath : path.resolve(currentWorkingDirectory, filePath);
+      
       // 파일이 이미 존재하는지 확인
-      if (fs.existsSync(filePath)) {
+      if (fs.existsSync(absoluteFilePath)) {
         resolve({ success: false, error: '파일이 이미 존재합니다.' });
         return;
       }
       
-      const dir = path.dirname(filePath);
+      const dir = path.dirname(absoluteFilePath);
       
       // 비밀번호와 함께 sudo 명령 실행
-      const sudoCommand = `echo '${password}' | sudo -S mkdir -p "${dir}" && echo '${password}' | sudo -S chmod 755 "${dir}" && echo '${password}' | sudo -S touch "${filePath}" && echo '${password}' | sudo -S chmod 644 "${filePath}" && echo '${password}' | sudo -S chown $USER "${filePath}"`;
+      const sudoCommand = `echo '${password}' | sudo -S mkdir -p "${dir}" && echo '${password}' | sudo -S chmod 755 "${dir}" && echo '${password}' | sudo -S touch "${absoluteFilePath}" && echo '${password}' | sudo -S chmod 644 "${absoluteFilePath}" && echo '${password}' | sudo -S chown $USER "${absoluteFilePath}"`;
       
       exec(sudoCommand, (error, stdout, stderr) => {
         if (error) {
