@@ -10,6 +10,9 @@ git clone https://github.com/dunchi/hurl-beautify-response-json.git
 ```
 
 ### 2. 의존성 설치
+npm 이 없다면
+```brew install --formulae npm```
+
 ```bash
 npm install
 ```
