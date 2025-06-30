@@ -4,6 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 let windows = [];
+let currentWorkingDirectory = process.cwd(); // 현재 작업 디렉토리 유지
 
 function createWindow() {
   // 아이콘 파일 경로 확인
@@ -51,7 +52,47 @@ function createWindow() {
 // IPC 핸들러 - 커맨드 실행
 ipcMain.handle('execute-command', (event, command) => {
   return new Promise((resolve, reject) => {
-    exec(command, { timeout: 30000 }, (error, stdout, stderr) => {
+    const trimmedCommand = command.trim();
+    
+    // cd 명령어 처리
+    if (trimmedCommand.startsWith('cd ')) {
+      const newPath = trimmedCommand.substring(3).trim();
+      let targetPath;
+      
+      // 절대 경로인지 확인
+      if (path.isAbsolute(newPath)) {
+        targetPath = newPath;
+      } else {
+        // 상대 경로면 현재 작업 디렉토리 기준으로 해석
+        targetPath = path.resolve(currentWorkingDirectory, newPath);
+      }
+      
+      // 디렉토리 존재 여부 확인
+      try {
+        const stats = fs.statSync(targetPath);
+        if (stats.isDirectory()) {
+          currentWorkingDirectory = targetPath;
+          resolve(`Changed directory to: ${currentWorkingDirectory}`);
+        } else {
+          resolve(`Error: '${newPath}' is not a directory`);
+        }
+      } catch (error) {
+        resolve(`Error: Directory '${newPath}' does not exist`);
+      }
+      return;
+    }
+    
+    // pwd 명령어 처리
+    if (trimmedCommand === 'pwd') {
+      resolve(currentWorkingDirectory);
+      return;
+    }
+    
+    // 다른 명령어들은 현재 작업 디렉토리에서 실행
+    exec(command, { 
+      timeout: 30000, 
+      cwd: currentWorkingDirectory 
+    }, (error, stdout, stderr) => {
       if (error) {
         resolve(`Error: ${error.message}`);
       } else if (stderr) {
@@ -61,6 +102,11 @@ ipcMain.handle('execute-command', (event, command) => {
       }
     });
   });
+});
+
+// IPC 핸들러 - 현재 작업 디렉토리 가져오기
+ipcMain.handle('get-current-directory', () => {
+  return currentWorkingDirectory;
 });
 
 // 히스토리 파일 경로

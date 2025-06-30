@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   executeCommand: (command) => ipcRenderer.invoke('execute-command', command),
+  getCurrentDirectory: () => ipcRenderer.invoke('get-current-directory'),
   loadHistory: () => ipcRenderer.invoke('load-history'),
   saveHistory: (history) => ipcRenderer.invoke('save-history', history),
   clearHistory: () => ipcRenderer.invoke('clear-history'),
