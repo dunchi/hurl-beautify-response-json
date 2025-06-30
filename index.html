@@ -84,6 +84,7 @@
       // 커맨드 히스토리 관리
       let commandHistory = [];
       let historyIndex = -1;
+      let sessionHistory = []; // 현재 세션에서 추가된 커맨드들
       
 
 
@@ -110,7 +111,10 @@
 
       // 히스토리에 커맨드 추가 (중복 방지)
       function addToHistory(command) {
-        // 기존에 같은 커맨드가 있다면 제거
+        // 세션 히스토리에 추가 (중복 제거 없이)
+        sessionHistory.push(command);
+        
+        // 메모리 히스토리에서 중복 제거
         const existingIndex = commandHistory.indexOf(command);
         if (existingIndex !== -1) {
           commandHistory.splice(existingIndex, 1);
@@ -123,11 +127,75 @@
         historyIndex = -1;
       }
 
+      // 프로그램 시작 시 히스토리 로드
+      async function loadHistory() {
+        try {
+          const history = await window.electronAPI.loadHistory();
+          commandHistory = history;
+          console.log('히스토리 로드됨:', history.length, '개 항목');
+        } catch (error) {
+          console.error('히스토리 로드 오류:', error);
+        }
+      }
+
+      // 프로그램 종료 시 세션 히스토리 저장
+      async function saveSessionHistory() {
+        try {
+          if (sessionHistory.length > 0) {
+            await window.electronAPI.saveHistory(sessionHistory);
+            console.log('세션 히스토리 저장됨:', sessionHistory.length, '개 항목');
+          }
+        } catch (error) {
+          console.error('히스토리 저장 오류:', error);
+        }
+      }
+
+      // 히스토리 클리어 함수
+      async function clearHistory() {
+        try {
+          // 메모리 히스토리 초기화
+          commandHistory = [];
+          sessionHistory = [];
+          historyIndex = -1;
+          
+          // 로컬 파일 히스토리 클리어
+          await window.electronAPI.clearHistory();
+          
+          console.log('히스토리가 모두 초기화되었습니다.');
+          return true;
+        } catch (error) {
+          console.error('히스토리 클리어 오류:', error);
+          return false;
+        }
+      }
+
       async function executeCommand() {
         let command = commandLine.value.trim();
 
         // 커맨드가 비어있으면 리턴
         if (!command) return;
+
+        // "clear" 커맨드인지 확인
+        if (command.toLowerCase() === "clear") {
+          const cleared = await clearHistory();
+          if (cleared) {
+            // 텍스트 영역도 클리어
+            textArea.value = "";
+            // 성공 메시지 표시
+            const timestamp = new Date().toLocaleTimeString();
+            const newContent = `[${timestamp}] $ ${command}\n히스토리가 모두 초기화되었습니다.\n\n`;
+            textArea.value = newContent + textArea.value;
+          } else {
+            // 에러 메시지 표시
+            const timestamp = new Date().toLocaleTimeString();
+            const newContent = `[${timestamp}] $ ${command}\n히스토리 초기화 중 오류가 발생했습니다.\n\n`;
+            textArea.value = newContent + textArea.value;
+          }
+          
+          // 커맨드 라인 초기화
+          commandLine.value = "";
+          return;
+        }
 
         // 히스토리에 추가
         addToHistory(command);
@@ -207,6 +275,16 @@
         // 커서 위치 조정
         const newCursorPos = startPos + formattedText.length;
         textArea.setSelectionRange(newCursorPos, newCursorPos);
+      });
+
+      // 페이지 로드 시 히스토리 로드
+      window.addEventListener('DOMContentLoaded', function() {
+        loadHistory();
+      });
+
+      // 페이지 종료 시 세션 히스토리 저장
+      window.addEventListener('beforeunload', function() {
+        saveSessionHistory();
       });
 
 

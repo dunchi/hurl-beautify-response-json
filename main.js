@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, ipcMain } = require("electron");
 const { exec } = require("child_process");
+const fs = require("fs");
 const path = require("path");
 
 let windows = [];
@@ -59,6 +60,70 @@ ipcMain.handle('execute-command', (event, command) => {
         resolve(stdout || '(no output)');
       }
     });
+  });
+});
+
+// 히스토리 파일 경로
+const historyFilePath = path.join(__dirname, 'command_history.txt');
+
+// IPC 핸들러 - 히스토리 로드
+ipcMain.handle('load-history', () => {
+  return new Promise((resolve) => {
+    try {
+      if (fs.existsSync(historyFilePath)) {
+        const historyData = fs.readFileSync(historyFilePath, 'utf8');
+        const lines = historyData.split('\n').filter(line => line.trim() !== '');
+        
+        // 중복 제거하고 최신순으로 정렬
+        const uniqueHistory = [];
+        lines.forEach(line => {
+          const existingIndex = uniqueHistory.indexOf(line);
+          if (existingIndex !== -1) {
+            uniqueHistory.splice(existingIndex, 1);
+          }
+          uniqueHistory.push(line);
+        });
+        
+        resolve(uniqueHistory);
+      } else {
+        resolve([]);
+      }
+    } catch (error) {
+      console.error('히스토리 로드 오류:', error);
+      resolve([]);
+    }
+  });
+});
+
+// IPC 핸들러 - 히스토리 저장 (append)
+ipcMain.handle('save-history', (event, newHistory) => {
+  return new Promise((resolve) => {
+    try {
+      if (newHistory.length > 0) {
+        const dataToAppend = newHistory.join('\n') + '\n';
+        fs.appendFileSync(historyFilePath, dataToAppend, 'utf8');
+      }
+      resolve(true);
+    } catch (error) {
+      console.error('히스토리 저장 오류:', error);
+      resolve(false);
+    }
+  });
+});
+
+// IPC 핸들러 - 히스토리 클리어
+ipcMain.handle('clear-history', () => {
+  return new Promise((resolve) => {
+    try {
+      // 히스토리 파일 삭제
+      if (fs.existsSync(historyFilePath)) {
+        fs.unlinkSync(historyFilePath);
+      }
+      resolve(true);
+    } catch (error) {
+      console.error('히스토리 클리어 오류:', error);
+      resolve(false);
+    }
   });
 });
 
