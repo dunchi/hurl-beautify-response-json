@@ -88,8 +88,14 @@ ipcMain.handle('execute-command', (event, command) => {
       return;
     }
     
+    // hurl 명령어에 자동으로 --verbose 옵션 추가
+    let modifiedCommand = command;
+    if (trimmedCommand.startsWith('hurl ') && !trimmedCommand.includes('--verbose')) {
+      modifiedCommand = command.replace('hurl ', 'hurl --verbose ');
+    }
+    
     // 다른 명령어들은 현재 작업 디렉토리에서 실행
-    exec(command, { 
+    exec(modifiedCommand, { 
       timeout: 30000, 
       cwd: currentWorkingDirectory 
     }, (error, stdout, stderr) => {
